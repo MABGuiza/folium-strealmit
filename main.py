@@ -18,7 +18,8 @@ st.session_state.setdefault('center', [33.9989, 10.1658])
 st.session_state.setdefault('zoom', 6)
 
 
-@st.cache_data
+@st.cache_resource
+# @st.cache_data
 def get_df() -> pd.DataFrame:
     response = requests.post(url=API, json=REQUEST)
     data = response.json()['map']['gouvernorat']
