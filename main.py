@@ -16,8 +16,7 @@ st.session_state.setdefault('selected_opacity', 0.4)
 st.session_state.setdefault('compare', False)
 st.session_state.setdefault('target', None)
 st.session_state.setdefault('tooltip_content', None)
-if 'maps' not in st.session_state:
-    st.session_state['maps'] = []
+st.session_state.setdefault('maps', [])
 if 'selected_parti' not in st.session_state:
     st.session_state['selected_parti'] = None
 if 'flag' not in st.session_state:
@@ -180,9 +179,9 @@ def main():
                         with col1:
                             st.write(output['last_object_clicked_tooltip'])
                         with col2:
-                            if st.checkbox(
-                                    key='compare', label="Utiliser comme cible") and output['last_object_clicked_tooltip']:
-                                st.session_state.target = output['last_active_drawing']['properties']['code_gouvernorat']
+                            # if st.checkbox(
+                            #         key='compare', label="Utiliser comme cible") and output['last_object_clicked_tooltip']:
+                            #     st.session_state.target = output['last_active_drawing']['properties']['code_gouvernorat']
                             st.write(st.session_state.target)
 
                     with sublevel:
@@ -196,9 +195,10 @@ def main():
                                     "Voix": 3, "Pourcentage": 25},
                             ]
                         )
-                        edited_df = st.data_editor(edf)
+                        edited_df = st.data_editor(edf, key=key)
                     st.divider()
                     cleanedDF = df.drop(columns=['geometry'])
+                    cleanedDF = cleanedDF.fillna(0)
                     columnDefs = [
                         {"headerName": "Nom gouvernorat",
                             "field": "nom_gouvernorat"},
