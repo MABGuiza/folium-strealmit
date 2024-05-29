@@ -73,6 +73,11 @@ def get_df(mapObject) -> pd.DataFrame:
         return merged_gdf
 
 
+def calculate_average(df):
+    df['average'] = df['prc'].mean()
+    return df
+
+
 def colormap(df, target):
     min_value = df.min()
     max_value = df.max()
@@ -207,6 +212,18 @@ def main():
                         {"headerName": "Pourcentage", "field": "prc"}]
                     AgGrid(cleanedDF, gridOptions={
                            "columnDefs": columnDefs}, height=332)
+        st.markdown('---')
+        st.header("Comparaison en pourcentile")
+        df_with_avg = calculate_average(df)
+        diff_map = folium.Map(location=[33.9989, 10.1658], zoom_start=6)
+        folium.GeoJson(df_with_avg, style_function=lambda x: {
+            "fillColor": "blue" if x["properties"]["prc"] > x["properties"]["average"] else "red",
+            "color": "black",
+            "weight": '1',
+            "fillOpacity": st.session_state['selected_opacity'],
+        }).add_to(diff_map)
+        st_folium(diff_map, key='comparison_map', center=st.session_state["center"],
+                  zoom=st.session_state["zoom"], width=525, height=550)
 
 
 def sideBar():
