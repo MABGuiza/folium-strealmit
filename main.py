@@ -78,6 +78,12 @@ def calculate_average(df):
     return df
 
 
+def calculate_percentage_difference(df):
+    average_prc = df['prc'].mean()
+    df['percentile_diff'] = ((df['prc'] - average_prc) / average_prc) * 100
+    return df
+
+
 def colormap(df, target):
     min_value = df.min()
     max_value = df.max()
@@ -94,6 +100,18 @@ def colormap(df, target):
         )
     else:
         return StepColormap(colors=COLORS, index=None, vmin=min_value, vmax=max_value, caption="Moyenne generale")
+
+
+def percentile_colormap(df):
+    min_value = df['percentile_diff'].min()
+    max_value = df['percentile_diff'].max()
+    colormap = LinearColormap(
+        colors=["red", "orange", "lightblue", "green", "darkgreen"],
+        vmin=min_value,
+        vmax=max_value,
+        caption="Différence percentile de la moyenne"
+    )
+    return colormap
 
 
 result = get_init()
@@ -184,9 +202,6 @@ def main():
                         with col1:
                             st.write(output['last_object_clicked_tooltip'])
                         with col2:
-                            # if st.checkbox(
-                            #         key='compare', label="Utiliser comme cible") and output['last_object_clicked_tooltip']:
-                            #     st.session_state.target = output['last_active_drawing']['properties']['code_gouvernorat']
                             st.write(st.session_state.target)
 
                     with sublevel:
@@ -214,14 +229,30 @@ def main():
                            "columnDefs": columnDefs}, height=332)
         st.markdown('---')
         st.header("Comparaison: Moyenne Nationale")
-        df_with_avg = calculate_average(df)
+        df_with_avg = calculate_percentage_difference(df)
+        percent_colormap = percentile_colormap(df_with_avg)
         diff_map = folium.Map(location=[33.9989, 10.1658], zoom_start=6)
         folium.GeoJson(df_with_avg, style_function=lambda x: {
-            "fillColor": "blue" if x["properties"]["prc"] > x["properties"]["average"] else "red",
+            "fillColor": percent_colormap(x["properties"]["percentile_diff"]),
             "color": "black",
             "weight": '1',
             "fillOpacity": st.session_state['selected_opacity'],
-        }).add_to(diff_map)
+        }, tooltip=GeoJsonTooltip(
+            fields=["nom_gouvernorat", "votes", "prc", "percentile_diff"],
+            aliases=[
+                "Gouvernorat:", "Nombres de votes:", "Pourcentage des votes:", "Différence percentile:"],
+            localize=True,
+            sticky=False,
+            labels=True,
+            style="""
+                        background-color: #F0EFEF;
+                        border: 2px solid black;
+                        border-radius: 3px;
+                        box-shadow: 3px;
+                    """,
+            max_width=800,
+        )).add_to(diff_map)
+        percent_colormap.add_to(diff_map)
         st_folium(diff_map, key='comparison_map', center=st.session_state["center"],
                   zoom=st.session_state["zoom"], width=525, height=550)
 
