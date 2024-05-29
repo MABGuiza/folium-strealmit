@@ -213,7 +213,7 @@ def main():
                     AgGrid(cleanedDF, gridOptions={
                            "columnDefs": columnDefs}, height=332)
         st.markdown('---')
-        st.header("Comparaison en pourcentile")
+        st.header("Comparaison: Moyenne Nationale")
         df_with_avg = calculate_average(df)
         diff_map = folium.Map(location=[33.9989, 10.1658], zoom_start=6)
         folium.GeoJson(df_with_avg, style_function=lambda x: {
