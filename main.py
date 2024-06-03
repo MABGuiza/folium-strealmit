@@ -5,6 +5,7 @@ from branca.colormap import StepColormap, LinearColormap
 import streamlit as st
 import pandas as pd
 import geopandas as geopandas
+import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 from st_aggrid import AgGrid
 from config import API, REQUEST, INIT_REQ, COLORS
@@ -78,9 +79,9 @@ def calculate_average(df):
     return df
 
 
-def calculate_percentage_difference(df):
-    average_prc = df['prc'].mean()
+def calculate_percentage_difference(df, average_prc):
     df['percentile_diff'] = ((df['prc'] - average_prc) / average_prc) * 100
+    df['average'] = average_prc
     return df
 
 
@@ -229,32 +230,48 @@ def main():
                            "columnDefs": columnDefs}, height=332)
         st.markdown('---')
         st.header("Comparaison: Moyenne Nationale")
-        df_with_avg = calculate_percentage_difference(df)
-        percent_colormap = percentile_colormap(df_with_avg)
-        diff_map = folium.Map(location=[33.9989, 10.1658], zoom_start=6)
-        folium.GeoJson(df_with_avg, style_function=lambda x: {
-            "fillColor": percent_colormap(x["properties"]["percentile_diff"]),
-            "color": "black",
-            "weight": '1',
-            "fillOpacity": st.session_state['selected_opacity'],
-        }, tooltip=GeoJsonTooltip(
-            fields=["nom_gouvernorat", "votes", "prc", "percentile_diff"],
-            aliases=[
-                "Gouvernorat:", "Nombres de votes:", "Pourcentage des votes:", "Différence percentile:"],
-            localize=True,
-            sticky=False,
-            labels=True,
-            style="""
-                        background-color: #F0EFEF;
-                        border: 2px solid black;
-                        border-radius: 3px;
-                        box-shadow: 3px;
-                    """,
-            max_width=800,
-        )).add_to(diff_map)
-        percent_colormap.add_to(diff_map)
-        st_folium(diff_map, key='comparison_map', center=st.session_state["center"],
-                  zoom=st.session_state["zoom"], width=525, height=550)
+        left1, right1 = st.columns(2)
+        average_prc = df['prc'].mean()
+        with left1:
+            df_with_avg = calculate_percentage_difference(df, average_prc)
+            percent_colormap = percentile_colormap(df_with_avg)
+            diff_map = folium.Map(location=[33.9989, 10.1658], zoom_start=6)
+            folium.GeoJson(df_with_avg, style_function=lambda x: {
+                "fillColor": percent_colormap(x["properties"]["percentile_diff"]),
+                "color": "black",
+                "weight": '1',
+                "fillOpacity": st.session_state['selected_opacity'],
+            }, tooltip=GeoJsonTooltip(
+                fields=["nom_gouvernorat", "average",
+                        "prc", "percentile_diff"],
+                aliases=[
+                    "Gouvernorat:", "Moyenne nationale:", "Pourcentage des votes:", "Différence percentile:"],
+                localize=True,
+                sticky=False,
+                labels=True,
+                style="""
+                            background-color: #F0EFEF;
+                            border: 2px solid black;
+                            border-radius: 3px;
+                            box-shadow: 3px;
+                        """,
+                max_width=800,
+            )).add_to(diff_map)
+            percent_colormap.add_to(diff_map)
+            st_folium(diff_map, key='comparison_map', center=st.session_state["center"],
+                      zoom=st.session_state["zoom"], width=525, height=550)
+        with right1:
+            with st.container(border=2):
+                st.write(f"Moyenne nationale: {average_prc:.2f}%")
+                above_average = df[df['prc'] > average_prc].shape[0]
+                below_average = df[df['prc'] <= average_prc].shape[0]
+
+                fig, ax = plt.subplots()
+                ax.pie([above_average, below_average], labels=[
+                       'Superieur', 'Inferieur'], autopct='%1.1f%%', colors=['green', 'red'])
+                ax.set_title(
+                    "Distribution des gouvernorats par rapport a la moyenne")
+                st.pyplot(fig)
 
 
 def sideBar():
